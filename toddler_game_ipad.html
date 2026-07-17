@@ -2,21 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Toddler Play">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Toddler Play</title>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
-  html, body { overscroll-behavior: none; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     margin: 0; padding: 16px; background: #FAF7F2; color: #2C2C2A;
-    padding-top: max(16px, env(safe-area-inset-top));
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-    min-height: 100vh; min-height: 100dvh;
-    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
   }
   .container { width: 100%; max-width: 720px; }
   .menu { text-align: center; }
@@ -53,8 +46,10 @@
   .sa { animation: spk 0.8s ease-out forwards; }
   .fa { animation: fl 1s ease-out forwards; }
   @media (max-width: 500px) {
-    .menu-grid { grid-template-columns: 1fr; }
+    .menu-grid { grid-template-columns: 1fr 1fr; }
     .area { height: 60vh; }
+    .menu-btn .emoji { font-size: 48px; }
+    .menu-btn { padding: 20px 8px; }
   }
 </style>
 </head>
@@ -75,6 +70,18 @@
       <button class="menu-btn" data-g="shapes" style="background: #F4C0D1;">
         <div class="emoji">⭐</div>
         <div class="label" style="color: #4B1528;">Shapes</div>
+      </button>
+      <button class="menu-btn" data-g="draw" style="background: #D9D6F5;">
+        <div class="emoji">🖍️</div>
+        <div class="label" style="color: #2E2A66;">Draw</div>
+      </button>
+      <button class="menu-btn" data-g="sizes" style="background: #C9E8D1;">
+        <div class="emoji">🐘</div>
+        <div class="label" style="color: #16452B;">Big & Small</div>
+      </button>
+      <button class="menu-btn" data-g="puzzle" style="background: #FBE0B0;">
+        <div class="emoji">🧩</div>
+        <div class="label" style="color: #5A3B0A;">Puzzle</div>
       </button>
     </div>
   </div>
@@ -99,30 +106,16 @@ function ga(){
   return ax;
 }
 
-let voice = null;
-function pickVoice(){
-  if(!window.speechSynthesis) return;
-  const vs = window.speechSynthesis.getVoices();
-  voice = vs.find(v => v.lang === 'en-US' && v.localService) || vs.find(v => v.lang.startsWith('en')) || null;
-}
-if(window.speechSynthesis){
-  pickVoice();
-  window.speechSynthesis.onvoiceschanged = pickVoice;
-}
-
 function speak(text, pitch, rate){
   try{
-    if(!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    // iOS Safari drops utterances queued immediately after cancel(); a short delay fixes it
-    setTimeout(() => {
+    if(window.speechSynthesis){
+      window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      if(voice) u.voice = voice;
       u.pitch = pitch || 1;
       u.rate = rate || 1;
       u.volume = 1;
       window.speechSynthesis.speak(u);
-    }, 60);
+    }
   }catch(e){}
 }
 
@@ -171,6 +164,7 @@ const animals = [
 
 function startA(){
   A.innerHTML = '';
+  S.style.visibility = 'visible';
   P.textContent = 'Tap an animal!';
   const cs = 4, rs = 2, pd = 12;
   const cw = (A.offsetWidth - pd*(cs+1)) / cs;
@@ -182,7 +176,7 @@ function startA(){
     card.className = 'tap';
     card.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${cw}px;height:${ch}px;background:${a.c};border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;`;
     card.innerHTML = `<div style="font-size:64px;line-height:1;">${a.e}</div><div style="font-size:16px;font-weight:500;color:${a.tc};margin-top:6px;">${a.n}</div>`;
-    card.addEventListener('pointerdown', () => {
+    card.addEventListener('click', () => {
       speak(a.s, a.p, a.r);
       card.classList.remove('wa'); void card.offsetWidth; card.classList.add('wa');
       P.textContent = `${a.n} says "${a.s}"`;
@@ -195,6 +189,7 @@ function startA(){
 
 function startB(){
   A.innerHTML = '';
+  S.style.visibility = 'visible';
   A.style.background = 'linear-gradient(180deg, #B5E0F4 0%, #E6F1FB 100%)';
   P.textContent = 'Pop the bubbles!';
   if(bi) clearInterval(bi);
@@ -221,7 +216,7 @@ function startB(){
       else requestAnimationFrame(an);
     };
     an();
-    b.addEventListener('pointerdown', e => {
+    b.addEventListener('click', e => {
       e.stopPropagation();
       pop();
       const px = parseFloat(b.style.left), py = parseFloat(b.style.top);
@@ -239,7 +234,12 @@ const shapes = [
   {n:'circle',   c:'#D4537E', tc:'#4B1528'},
   {n:'square',   c:'#7F77DD', tc:'#26215C'},
   {n:'triangle', c:'#1D9E75', tc:'#04342C'},
-  {n:'star',     c:'#EF9F27', tc:'#412402'}
+  {n:'star',     c:'#EF9F27', tc:'#412402'},
+  {n:'heart',    c:'#E4572E', tc:'#4A150A'},
+  {n:'diamond',  c:'#378ADD', tc:'#042C53'},
+  {n:'pentagon', c:'#F7C548', tc:'#4A3703'},
+  {n:'hexagon',  c:'#8A5A34', tc:'#2E1D10'},
+  {n:'oval',     c:'#46C2CB', tc:'#0A3A3D'}
 ];
 
 function ssvg(s, sz){
@@ -247,30 +247,50 @@ function ssvg(s, sz){
   if(s.n === 'square')   return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><rect x="10" y="10" width="80" height="80" rx="8" fill="${s.c}"/></svg>`;
   if(s.n === 'triangle') return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><polygon points="50,12 92,85 8,85" fill="${s.c}"/></svg>`;
   if(s.n === 'star')     return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><polygon points="50,8 61,38 92,38 67,58 77,90 50,70 23,90 33,58 8,38 39,38" fill="${s.c}"/></svg>`;
+  if(s.n === 'heart')    return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><path d="M50 18 C 35 0, 0 10, 0 35 C 0 62, 50 92, 50 92 C 50 92, 100 62, 100 35 C 100 10, 65 0, 50 18 Z" fill="${s.c}"/></svg>`;
+  if(s.n === 'diamond')  return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><polygon points="50,6 94,50 50,94 6,50" fill="${s.c}"/></svg>`;
+  if(s.n === 'pentagon') return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><polygon points="50,6 94,38 77,92 23,92 6,38" fill="${s.c}"/></svg>`;
+  if(s.n === 'hexagon')  return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><polygon points="50,4 91,27 91,73 50,96 9,73 9,27" fill="${s.c}"/></svg>`;
+  if(s.n === 'oval')     return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}"><ellipse cx="50" cy="50" rx="46" ry="30" fill="${s.c}"/></svg>`;
 }
 
 let tg = null;
+let shapeHistory = [];
+const SHAPE_HISTORY_LEN = 3;
 
 function startS(){
   A.innerHTML = '';
+  S.style.visibility = 'visible';
   A.style.background = '#F1EFE8';
+  shapeHistory = [];
   nr();
 }
 
 function nr(){
   if(cg !== 'shapes') return;
   A.innerHTML = '';
-  tg = shapes[Math.floor(Math.random()*shapes.length)];
+
+  // Pick a target that hasn't appeared in the last SHAPE_HISTORY_LEN rounds
+  let candidates = shapes.filter(s => !shapeHistory.includes(s.n));
+  if(candidates.length === 0) candidates = shapes;
+  tg = candidates[Math.floor(Math.random() * candidates.length)];
+  shapeHistory.push(tg.n);
+  if(shapeHistory.length > SHAPE_HISTORY_LEN) shapeHistory.shift();
+
   P.textContent = `Find the ${tg.n}!`;
   speak(`Find the ${tg.n}`, 1.2, 0.9);
   const td = document.createElement('div');
   td.style.cssText = 'position:absolute;left:50%;top:16px;transform:translateX(-50%);background:white;border-radius:12px;padding:10px 24px;display:flex;align-items:center;gap:14px;border:1px solid #D3D1C7;';
   td.innerHTML = `<span style="font-size:16px;color:#888780;">Tap the</span>${ssvg(tg, 48)}`;
   A.appendChild(td);
+
+  // Pick 3 random distractors (distinct from target) and shuffle all 4 positions
+  const pool = shapes.filter(s => s.n !== tg.n).sort(() => Math.random() - 0.5);
+  const options = [tg, ...pool.slice(0, 3)].sort(() => Math.random() - 0.5);
+
   const ps = [{x:0.2,y:0.55},{x:0.5,y:0.4},{x:0.8,y:0.55},{x:0.5,y:0.78}];
-  const sh = [...shapes].sort(() => Math.random() - 0.5);
   const sz = 110;
-  sh.forEach((s, i) => {
+  options.forEach((s, i) => {
     const p = ps[i];
     const x = p.x * A.offsetWidth - sz/2;
     const y = p.y * A.offsetHeight - sz/2;
@@ -278,7 +298,7 @@ function nr(){
     w.className = 'tap';
     w.style.cssText = `position:absolute;left:${x}px;top:${y}px;`;
     w.innerHTML = ssvg(s, sz);
-    w.addEventListener('pointerdown', () => {
+    w.addEventListener('click', () => {
       if(s.n === tg.n){
         suc();
         speak('Yay!', 1.5, 1.1);
@@ -293,6 +313,318 @@ function nr(){
     });
     A.appendChild(w);
   });
+}
+
+// BIG & SMALL (Montessori sensorial - visual size discrimination)
+const sizeObjects = ['⚽','🍎','🌸','🚗','🎈','🐟','🍪','🌟'];
+let curSizeTarget = null;
+
+function startSizes(){
+  A.innerHTML = '';
+  S.style.visibility = 'visible';
+  A.style.background = '#F1EFE8';
+  nrSizes();
+}
+
+function nrSizes(){
+  if(cg !== 'sizes') return;
+  A.innerHTML = '';
+  const obj = sizeObjects[Math.floor(Math.random()*sizeObjects.length)];
+  curSizeTarget = Math.random() < 0.5 ? 'big' : 'small';
+  P.textContent = curSizeTarget === 'big' ? 'Tap the BIG one!' : 'Tap the small one!';
+  speak(curSizeTarget === 'big' ? 'Find the big one' : 'Find the small one', 1.2, 0.9);
+
+  // Randomize left/right positions
+  const bigOnLeft = Math.random() < 0.5;
+  const leftSize = bigOnLeft ? 'big' : 'small';
+  const rightSize = bigOnLeft ? 'small' : 'big';
+
+  function makeObj(size, xFrac){
+    const fontSize = size === 'big' ? 160 : 64;
+    const el = document.createElement('div');
+    el.className = 'tap';
+    el.textContent = obj;
+    el.style.cssText = `position:absolute;left:${xFrac*100}%;top:50%;transform:translate(-50%,-50%);font-size:${fontSize}px;line-height:1;`;
+    el.addEventListener('click', () => {
+      const x = A.offsetWidth * xFrac, y = A.offsetHeight * 0.5;
+      if(size === curSizeTarget){
+        suc();
+        speak('Yes! That\'s ' + (size === 'big' ? 'big' : 'small'), 1.4, 1.0);
+        spk(x - 18, y - 18);
+        ft(x - 30, y - 60, 'Yay!', '#16452B');
+        us(2);
+        setTimeout(nrSizes, 1400);
+      } else {
+        tone(200, 0.15, 'sine');
+        el.classList.remove('wa'); void el.offsetWidth; el.classList.add('wa');
+      }
+    });
+    return el;
+  }
+
+  A.appendChild(makeObj(leftSize, 0.25));
+  A.appendChild(makeObj(rightSize, 0.75));
+}
+
+// SHAPE PUZZLE (drag and drop)
+const puzzleShapes = [
+  {n:'circle',   c:'#D4537E'},
+  {n:'square',   c:'#7F77DD'},
+  {n:'triangle', c:'#1D9E75'},
+  {n:'star',     c:'#EF9F27'}
+];
+
+function pShapeSVG(s, sz, filled, opacity){
+  const fill = filled ? s.c : 'none';
+  const stroke = filled ? 'none' : s.c;
+  const sw = filled ? 0 : 5;
+  const op = opacity !== undefined ? opacity : 1;
+  if(s.n === 'circle')   return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" style="opacity:${op}"><circle cx="50" cy="50" r="40" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-dasharray="${filled?'0':'8,6'}"/></svg>`;
+  if(s.n === 'square')   return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" style="opacity:${op}"><rect x="12" y="12" width="76" height="76" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-dasharray="${filled?'0':'8,6'}"/></svg>`;
+  if(s.n === 'triangle') return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" style="opacity:${op}"><polygon points="50,14 90,84 10,84" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-dasharray="${filled?'0':'8,6'}" stroke-linejoin="round"/></svg>`;
+  if(s.n === 'star')     return `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" style="opacity:${op}"><polygon points="50,8 61,38 92,38 67,58 77,90 50,70 23,90 33,58 8,38 39,38" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-dasharray="${filled?'0':'8,6'}" stroke-linejoin="round"/></svg>`;
+}
+
+function startPuzzle(){
+  A.innerHTML = '';
+  S.style.visibility = 'visible';
+  A.style.background = '#F1EFE8';
+  nrPuzzle();
+}
+
+let puzzleCleanup = [];
+
+function nrPuzzle(){
+  if(cg !== 'puzzle') return;
+  puzzleCleanup.forEach(fn => fn());
+  puzzleCleanup = [];
+  A.innerHTML = '';
+  P.textContent = 'Drag each shape to its home!';
+  speak('Drag each shape to its home', 1.1, 0.9);
+
+  const slotSize = 90, pieceSize = 80;
+  const slotPositions = [0.2, 0.5, 0.8];
+  const slots = [];
+
+  puzzleShapes.forEach((s, i) => {
+    const x = A.offsetWidth * slotPositions[i] - slotSize/2;
+    const y = A.offsetHeight * 0.28 - slotSize/2;
+    const slotEl = document.createElement('div');
+    slotEl.style.cssText = `position:absolute;left:${x}px;top:${y}px;`;
+    slotEl.innerHTML = pShapeSVG(s, slotSize, false, 0.6);
+    A.appendChild(slotEl);
+    slots.push({shape: s, cx: x + slotSize/2, cy: y + slotSize/2, filled: false, el: slotEl});
+  });
+
+  const piecePositions = [0.2, 0.5, 0.8];
+  const shuffledPieces = [...puzzleShapes].sort(() => Math.random() - 0.5);
+  let placedCount = 0;
+
+  shuffledPieces.forEach((s, i) => {
+    const startX = A.offsetWidth * piecePositions[i] - pieceSize/2;
+    const startY = A.offsetHeight * 0.72 - pieceSize/2;
+    const piece = document.createElement('div');
+    piece.className = 'tap';
+    piece.style.cssText = `position:absolute;left:${startX}px;top:${startY}px;cursor:grab;touch-action:none;z-index:3;`;
+    piece.innerHTML = pShapeSVG(s, pieceSize, true);
+    A.appendChild(piece);
+
+    let dragging = false, offX = 0, offY = 0, origX = startX, origY = startY;
+
+    function getPos(e){
+      const rect = A.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+
+    function onDown(e){
+      e.preventDefault();
+      dragging = true;
+      piece.style.zIndex = 10;
+      piece.style.cursor = 'grabbing';
+      const pos = getPos(e);
+      offX = pos.x - parseFloat(piece.style.left);
+      offY = pos.y - parseFloat(piece.style.top);
+    }
+    function onMove(e){
+      if(!dragging) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      piece.style.left = (pos.x - offX) + 'px';
+      piece.style.top = (pos.y - offY) + 'px';
+    }
+    function onUp(){
+      if(!dragging) return;
+      dragging = false;
+      piece.style.zIndex = 3;
+      piece.style.cursor = 'grab';
+      const pieceCx = parseFloat(piece.style.left) + pieceSize/2;
+      const pieceCy = parseFloat(piece.style.top) + pieceSize/2;
+
+      const targetSlot = slots.find(sl => sl.shape.n === s.n && !sl.filled);
+      if(targetSlot){
+        const dist = Math.hypot(pieceCx - targetSlot.cx, pieceCy - targetSlot.cy);
+        if(dist < 60){
+          piece.style.left = (targetSlot.cx - pieceSize/2) + 'px';
+          piece.style.top = (targetSlot.cy - pieceSize/2) + 'px';
+          targetSlot.filled = true;
+          piece.removeEventListener('mousedown', onDown);
+          piece.removeEventListener('touchstart', onDown);
+          piece.style.cursor = 'default';
+          suc();
+          speak('Yes!', 1.5, 1.1);
+          spk(pieceCx - 18, pieceCy - 18);
+          placedCount++;
+          us(2);
+          if(placedCount === puzzleShapes.length){
+            setTimeout(() => {
+              speak('All done! Great job!', 1.3, 1.0);
+              P.textContent = 'All done! Great job!';
+              setTimeout(nrPuzzle, 1800);
+            }, 400);
+          }
+          return;
+        }
+      }
+      // snap back
+      piece.style.left = origX + 'px';
+      piece.style.top = origY + 'px';
+    }
+
+    piece.addEventListener('mousedown', onDown);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    piece.addEventListener('touchstart', onDown, {passive:false});
+    piece.addEventListener('touchmove', onMove, {passive:false});
+    piece.addEventListener('touchend', onUp);
+    puzzleCleanup.push(() => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    });
+  });
+}
+
+// DRAW PAD
+const drawColors = [
+  {name:'Red',    hex:'#E4572E'},
+  {name:'Orange', hex:'#F4A261'},
+  {name:'Yellow', hex:'#F7C548'},
+  {name:'Green',  hex:'#1D9E75'},
+  {name:'Blue',   hex:'#378ADD'},
+  {name:'Purple', hex:'#7F77DD'},
+  {name:'Pink',   hex:'#D4537E'},
+  {name:'Brown',  hex:'#8A5A34'},
+  {name:'Black',  hex:'#2C2C2A'}
+];
+let drawCtx = null, drawing = false, curColor = drawColors[0].hex, eraserMode = false;
+const BRUSH_SIZE = 14, ERASER_SIZE = 40;
+
+function startDraw(){
+  A.innerHTML = '';
+  A.style.background = '#FFFFFF';
+  P.textContent = 'Draw something fun!';
+  S.style.visibility = 'hidden';
+
+  // Toolbar
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'position:absolute;top:8px;left:8px;right:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;z-index:5;background:rgba(255,255,255,0.9);border-radius:12px;padding:8px;';
+
+  drawColors.forEach(c => {
+    const sw = document.createElement('button');
+    sw.className = 'tap';
+    sw.style.cssText = `width:36px;height:36px;border-radius:50%;background:${c.hex};border:3px solid ${c.hex===curColor?'#2C2C2A':'transparent'};cursor:pointer;flex-shrink:0;`;
+    sw.addEventListener('click', () => {
+      curColor = c.hex;
+      eraserMode = false;
+      toolbar.querySelectorAll('.swatch').forEach(el => el.style.border = '3px solid transparent');
+      sw.style.border = '3px solid #2C2C2A';
+      eraserBtn.style.background = '#F1EFE8';
+    });
+    sw.classList.add('swatch');
+    toolbar.appendChild(sw);
+  });
+
+  const eraserBtn = document.createElement('button');
+  eraserBtn.className = 'tap';
+  eraserBtn.textContent = '🧹';
+  eraserBtn.style.cssText = 'width:40px;height:40px;border-radius:10px;background:#F1EFE8;border:2px solid #D3D1C7;font-size:20px;cursor:pointer;flex-shrink:0;margin-left:4px;';
+  eraserBtn.addEventListener('click', () => {
+    eraserMode = true;
+    toolbar.querySelectorAll('.swatch').forEach(el => el.style.border = '3px solid transparent');
+    eraserBtn.style.background = '#E0DEDA';
+  });
+  toolbar.appendChild(eraserBtn);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'tap';
+  clearBtn.textContent = 'Clear';
+  clearBtn.style.cssText = 'height:40px;border-radius:10px;background:#F4C0D1;border:none;font-size:14px;font-weight:500;color:#4B1528;padding:0 14px;cursor:pointer;flex-shrink:0;margin-left:4px;';
+  clearBtn.addEventListener('click', () => {
+    drawCtx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+  toolbar.appendChild(clearBtn);
+
+  // Canvas
+  const canvas = document.createElement('canvas');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none;';
+  A.appendChild(toolbar);
+  A.appendChild(canvas);
+
+  function sizeCanvas(){
+    canvas.width = A.offsetWidth * dpr;
+    canvas.height = A.offsetHeight * dpr;
+    drawCtx = canvas.getContext('2d');
+    drawCtx.scale(dpr, dpr);
+    drawCtx.lineCap = 'round';
+    drawCtx.lineJoin = 'round';
+  }
+  sizeCanvas();
+
+  let lastX = 0, lastY = 0;
+
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
+
+  function startStroke(e){
+    e.preventDefault();
+    drawing = true;
+    const pos = getPos(e);
+    lastX = pos.x; lastY = pos.y;
+    drawDot(pos.x, pos.y);
+  }
+  function drawDot(x, y){
+    drawCtx.globalCompositeOperation = eraserMode ? 'destination-out' : 'source-over';
+    drawCtx.beginPath();
+    drawCtx.arc(x, y, (eraserMode ? ERASER_SIZE : BRUSH_SIZE) / 2, 0, Math.PI * 2);
+    drawCtx.fillStyle = curColor;
+    drawCtx.fill();
+  }
+  function moveStroke(e){
+    if(!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    drawCtx.globalCompositeOperation = eraserMode ? 'destination-out' : 'source-over';
+    drawCtx.strokeStyle = curColor;
+    drawCtx.lineWidth = eraserMode ? ERASER_SIZE : BRUSH_SIZE;
+    drawCtx.beginPath();
+    drawCtx.moveTo(lastX, lastY);
+    drawCtx.lineTo(pos.x, pos.y);
+    drawCtx.stroke();
+    lastX = pos.x; lastY = pos.y;
+  }
+  function endStroke(){ drawing = false; }
+
+  canvas.addEventListener('mousedown', startStroke);
+  canvas.addEventListener('mousemove', moveStroke);
+  canvas.addEventListener('mouseup', endStroke);
+  canvas.addEventListener('mouseleave', endStroke);
+  canvas.addEventListener('touchstart', startStroke, {passive:false});
+  canvas.addEventListener('touchmove', moveStroke, {passive:false});
+  canvas.addEventListener('touchend', endStroke);
 }
 
 document.querySelectorAll('.menu-btn').forEach(btn => {
@@ -312,6 +644,9 @@ document.querySelectorAll('.menu-btn').forEach(btn => {
       if(cg === 'animals') startA();
       else if(cg === 'bubbles') startB();
       else if(cg === 'shapes') startS();
+      else if(cg === 'draw') startDraw();
+      else if(cg === 'sizes') startSizes();
+      else if(cg === 'puzzle') startPuzzle();
     }, 50);
   });
 });
@@ -319,6 +654,8 @@ document.querySelectorAll('.menu-btn').forEach(btn => {
 B.addEventListener('click', () => {
   cg = null;
   if(bi){ clearInterval(bi); bi = null; }
+  puzzleCleanup.forEach(fn => fn());
+  puzzleCleanup = [];
   if(window.speechSynthesis) window.speechSynthesis.cancel();
   A.innerHTML = '';
   A.style.background = '#F1EFE8';
